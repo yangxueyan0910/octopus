@@ -68,8 +68,8 @@ class GetVideosWindow(QWidget):
         self.table_widget = table_widget = QTableWidget(0, 2)  # (行，列)
 
         header_field = ['', '视频列表']
-        self.header = header = CheckBoxHeader()  # 实例化自定义表头
-        table_widget.setHorizontalHeader(header)  # 设置表头
+        self.header = header = CheckBoxHeader()  # 自定义了表头类
+        table_widget.setHorizontalHeader(header)  # 在表头中添加控件（如复选框）
         table_widget.setHorizontalHeaderLabels(header_field)  # 设置行表头字段
         table_widget.setColumnWidth(0, 30)  # 设置第0列宽度
         table_widget.setColumnWidth(1, 1400)  # 设置第1列宽度

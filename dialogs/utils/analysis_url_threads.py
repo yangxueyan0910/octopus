@@ -92,12 +92,10 @@ class AnalysisUrlThread(QThread):
                     print(item_url)
                     item_res = self.get_response(item_url).text
                     # 每个视频的标题
-                    item_title = re.findall('<h1 title="(.*?)" class="video-title tit">', item_res)[0]
+                    item_title = re.search('<title data-vue-meta="true">(.*?)_哔哩哔哩_bilibili<\/title>',item_res).group(1)
                     print(79, item_title)
-                    # item_title = re.sub(r'[^\u4e00-\u9fa5]+', '', item_title)  # 去除双引号
                     # item_title = re.sub(r'[\/:*?"<>|]', '', item_title)  # 去除双引号
-                    re.sub(r'[\/:*?"<>|\s]', '', item_title)
-
+                    item_title=re.sub(r'[\/:*?"<>|\s]', '', item_title)
                     item_video_info = [item_title, item_url, bvid]
                     video_info_list.append([])
                     video_info_list[i] = item_video_info
