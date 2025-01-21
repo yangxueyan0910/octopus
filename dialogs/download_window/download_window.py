@@ -33,6 +33,10 @@ class DownloadVideosWindow(QTabWidget):
         self.wait_cond = QWaitCondition()
         self.queue = Queue()
         self.timer = QTimer(self)
+        # 新增并发控制属性
+        self.max_concurrent = 3  # 最大并发数
+        self.current_tasks = 0  # 当前运行任务数
+
         self.init_ui()
 
     def init_ui(self):
@@ -145,13 +149,23 @@ class DownloadVideosWindow(QTabWidget):
 
     # -----header方法区------
     def event_all_start(self):
-        A = QMessageBox.warning(self, '警告', '是否要全部开始当前视频下载进程', QMessageBox.Yes | QMessageBox.No,
+        response = QMessageBox.warning(self, '警告', '是否要全部开始当前视频下载进程', QMessageBox.Yes | QMessageBox.No,
                                 QMessageBox.No)
-        if A == QMessageBox.Yes:
+        if response == QMessageBox.Yes:
+            #先清空队列
+            while not self.queue.empty():
+                self.queue.get()
+            #将所有任务加入队列
             for row in range(self.table_widget.rowCount()):
                 processbar = self.table_widget.cellWidget(row, 1)
                 if processbar.play_button.text() == "开始":
-                    self.add_queue(processbar)
+                    self.queue.put(processbar)
+            #启动初始任务
+            self.add_download_pool(True)
+            # for row in range(self.table_widget.rowCount()):
+            #     processbar = self.table_widget.cellWidget(row, 1)
+            #     if processbar.play_button.text() == "开始":
+            #         self.add_queue(processbar)
         else:
             return
 
@@ -190,18 +204,9 @@ class DownloadVideosWindow(QTabWidget):
             return
 
     # -----table方法区------
-    # def check_queue(self):
-    #     # 如果队列中的线程数量小于等于3，启动队列中的下一个线程
-    #     if self.queue.qsize() <= 3 and not self.queue.empty():
-    #         if self.queue.qsize() == 0:
-    #             self.timer.stop()
-    #         else:
-    #             processbar = self.queue.get()
-    #             self.start_progress(processbar)
 
     def add_table_item(self, item_video):
         current_row_count = self.table_widget.rowCount()
-        print(current_row_count)
         self.table_widget.insertRow(current_row_count)
         self.table_widget.setRowHeight(current_row_count, 20)
 
@@ -229,20 +234,16 @@ class DownloadVideosWindow(QTabWidget):
                 height: 12px;
                 margin: 0px 5px;
             }
-
             QProgressBar::chunk {
                 background-color: #4CAF50;
                 border-radius: 6px;
             }
-
             QProgressBar::chunk:hover {
                 background-color: #45a049;
             }
-
             QProgressBar:disabled {
                 background-color: #E0E0E0;
             }
-
             QProgressBar::chunk:disabled {
                 background-color: #A0A0A0;
             }
@@ -255,7 +256,6 @@ class DownloadVideosWindow(QTabWidget):
         play_button = QPushButton(self.start_icon, "开始", self)
         # play_button.setIcon(self.start_icon)
         play_button.setStyleSheet("border:none; color:transparent")
-        # play_button.clicked.connect(lambda: self.start_progress(progress_bar))
         play_button.clicked.connect(lambda: self.add_queue(progress_bar))
 
         # 取消按钮
@@ -276,11 +276,18 @@ class DownloadVideosWindow(QTabWidget):
         thread.progress_finish_update.connect(self.table_update)
         thread.progress_pause.connect(self.add_download_pool)
         thread.tip_signal.connect(self.add_tip_item)
+        #新增信号连接
+        thread.progress_finish.connect(self.task_finished)#连接完成信号到槽函数
         progress_bar.thread = thread
         progress_bar.current_row_count = current_row_count
         progress_bar.play_button = play_button
         progress_bar.tip_item = tip_item
         progress_bar.bvid = item_video['bvid']
+
+    #新增任务完成处理方法
+    def task_finished(self):
+        self.current_tasks -= 1 #减少当前任务计数
+        self.add_download_pool(True) #触发新任务启动
 
     def add_tip_item(self, tip):
         thread = self.table_widget.sender()
@@ -337,9 +344,10 @@ class DownloadVideosWindow(QTabWidget):
 
     def add_download_pool(self, flag):
         if flag:
-            if not self.queue.empty():
-                time.sleep(random.randint(1, 3))
+            while self.current_tasks<self.max_concurrent and not self.queue.empty():
+                time.sleep(random.randint(1, 2))
                 processbar = self.queue.get()
+                self.current_tasks+=1 #更新当前任务计数
                 self.start_progress(processbar)
 
     # 进度条完成后进行表格更新
@@ -349,12 +357,11 @@ class DownloadVideosWindow(QTabWidget):
         button = thread.play_button
         index = self.table_widget.indexAt(button.pos())
         current_row_count = index.row()
-        print(current_row_count)
         self.table_widget.removeRow(current_row_count)
         self.add_finish_table_item(item_video)
         thread.quit()
         thread.wait()
-        # time.sleep(random.randint(1, 3))
+
 
     # 右键选项
     def table_right_menu(self, pos):
@@ -455,9 +462,6 @@ class DownloadVideosWindow(QTabWidget):
 
         table_layout.addWidget(finish_table_widget)
 
-        # self.show()
-        # for item_video in self.download_video_list:
-        #     self.add_table_item(item_video)
         self.finished_widget.setLayout(table_layout)
 
     def init_finish_table(self):
