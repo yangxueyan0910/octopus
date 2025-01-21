@@ -62,9 +62,9 @@ class DownloadVideosWindow(QTabWidget):
         table_header = [
             {"field": "name", "text": "名称", 'width': 400},
             {"field": "processing", "text": "下载进度", 'width': 450},
-            {"field": "operator", "text": "", 'width': 60},
-            {"field": "cancel", "text": "", 'width': 60},
-            {"field": "bitrate", "text": "", 'width': 250},
+            {"field": "operator", "text": "开始/暂停", 'width': 140},
+            {"field": "cancel", "text": "取消", 'width': 80},
+            {"field": "bitrate", "text": "实时速度", 'width': 200},
         ]
         for idx, info in enumerate(table_header):  # idx起始默认0，info代表每个字典
             item = QTableWidgetItem()
@@ -72,10 +72,10 @@ class DownloadVideosWindow(QTabWidget):
             table_widget.setHorizontalHeaderItem(idx, item)
             table_widget.setColumnWidth(idx, info['width'])
         # 隐藏水平表头
-        self.table_widget.horizontalHeader().setVisible(False)
-        # 表头不显示分割线
+        self.table_widget.horizontalHeader().setVisible(True)
+        # 表头显示分割线
         self.table_widget.setShowGrid(True)
-        # 表头不显示数字
+        # 表头显示数字
         self.table_widget.verticalHeader().setVisible(True)
         self.init_table()
 
@@ -221,16 +221,34 @@ class DownloadVideosWindow(QTabWidget):
         progress_bar = QProgressBar(self)
         progress_bar.setValue(0)
         progress_bar.setStyleSheet("""
-                                        QProgressBar{
-                                            border: 1px solid grey;
-                                            border-radius: 5px;
-                                            text-align: center;
-                                        }
-                                        QProgressBar::chunk {
-                                            background-color: #bfb3e9;
-                                        }
-                                        """)
+            QProgressBar {
+                border: none;
+                background-color: #F0F0F0;
+                border-radius: 6px;
+                text-align: center;
+                height: 12px;
+                margin: 0px 5px;
+            }
+
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+                border-radius: 6px;
+            }
+
+            QProgressBar::chunk:hover {
+                background-color: #45a049;
+            }
+
+            QProgressBar:disabled {
+                background-color: #E0E0E0;
+            }
+
+            QProgressBar::chunk:disabled {
+                background-color: #A0A0A0;
+            }
+        """)
         progress_bar.setValue(item_video['finish_flag'])
+        time.sleep(1)
 
         # 开始按钮
         # start_icon = QIcon('asset/play.ico')

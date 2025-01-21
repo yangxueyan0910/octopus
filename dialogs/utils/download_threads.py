@@ -130,185 +130,142 @@ class DownloadInfoThread(QThread):
         ts = (h * 60 * 60) + (m * 60) + s + (ms / 1000)
         return ts
 
+    # def compute_progress_and_send_progress(self, process, save_path):
+    #     # 4
+    #     while process.poll() is None:
+    #         if not self.download_flag:
+    #             try:
+    #                 print(180, self.current_value)
+    #                 process.stdin.write('q')
+    #                 process.communicate()
+    #                 os.remove(save_path)
+    #                 self.current_value = math.ceil(progress)
+    #                 self.progress_pause.emit(True)
+    #                 self.tip_signal.emit('')
+    #                 print(185, self.current_value)
+    #                 sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
+    #                 values = (self.current_value, self.item_video_info['bvid'])
+    #                 lock.acquire()
+    #                 cursor.execute(sql, values)
+    #                 conn.commit()
+    #             except:
+    #                 conn.rollback()
+    #                 QMessageBox.warning(self, "错误", f"'{self.item_video_info['video_title']}的下载进度保存未成功'")
+    #             finally:
+    #                 lock.release()
+    #             break
+    #         else:
+    #             time.sleep(0.1)
+    #             line = process.stdout.readline()
+    #             print(line)
+    #             duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
+    #             if duration_res is not None:
+    #                 duration = duration_res.groupdict()['duration']
+    #                 duration = re.sub(r',', '', duration)
+    #                 print(duration, self.get_seconds(duration))
+    #
+    #             result = re.search(r'\stime=(?P<time>\S+)', line)
+    #             bitrate_res = re.search('\sbitrate=\s*(?P<bitrate>\S+)', line)
+    #             if result is not None and bitrate_res is not None:
+    #                 elapsed_time = result.groupdict()['time']
+    #                 bitrate = bitrate_res.groupdict()['bitrate']
+    #                 print(bitrate)
+    #                 # 此处可能会出现进度超过100%，未对数值进行纠正
+    #                 progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
+    #                 progress = round(progress, 1)
+    #                 self.set_current_value(math.ceil(progress))
+    #                 if progress >= self.current_value:
+    #                     if progress <= 99:
+    #                         self.progress_signal.emit(progress)
+    #                         self.tip_signal.emit(bitrate)
+    #                     else:
+    #                         try:
+    #                             sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
+    #                             values = (100, self.item_video_info['bvid'])
+    #                             lock.acquire()
+    #                             cursor.execute(sql, values)
+    #                             conn.commit()
+    #                             self.progress_signal.emit(100)
+    #                             self.tip_signal.emit('')
+    #                             self.progress_finish_update.emit(self.item_video_info)
+    #                             self.play_button.setIcon(self.finish_icon)
+    #                             self.play_button.setText("完成")
+    #                             self.progress_pause.emit(True)
+    #                             self.play_button.setEnabled(False)
+    #                         except:
+    #                             conn.rollback()
+    #                             QMessageBox.warning(self, "错误", f"'{self.item_video_info['video_title']}的下载进度保存未成功'")
+    #                         lock.release()
+    #                 else:
+    #                     self.tip_signal.emit("0.0kbits/s")
+
     def compute_progress_and_send_progress(self, process, save_path):
-        # 1
-        # while process.poll() is None:
-        #     if self.download_flag:
-        #         line = process.stdout.readline()
-        #         print(line)
-        #         duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
-        #         if duration_res is not None:
-        #             duration = duration_res.groupdict()['duration']
-        #             duration = re.sub(r',', '', duration)
-        #             print(duration, self.get_seconds(duration))
-        #
-        #         result = re.search(r'\stime=(?P<time>\S+)', line)
-        #         if result is not None:
-        #             elapsed_time = result.groupdict()['time']
-        #             # 此处可能会出现进度超过100%，未对数值进行纠正
-        #             progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
-        #             progress = round(progress, 1)
-        #             if progress < 100:
-        #                 self.progress_signal.emit(progress)
-        #             else:
-        #                 self.progress_signal.emit(100)
-        #                 self.play_button.setIcon(self.finish_icon)
-        #                 self.play_button.setText("完成")
-        #                 self.play_button.setEnabled(False)
-        #     else:
-        #         process.communicate(b' ')  # send space to pause/resume the process
-
-        # 2
-        # while process.poll() is None:
-        #     if self.download_flag:
-        #         line = process.stdout.readline()
-        #         print(line)
-        #         duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
-        #         if duration_res is not None:
-        #             duration = duration_res.groupdict()['duration']
-        #             duration = re.sub(r',', '', duration)
-        #             print(duration, self.get_seconds(duration))
-        #
-        #         result = re.search(r'\stime=(?P<time>\S+)', line)
-        #         if result is not None:
-        #             elapsed_time = result.groupdict()['time']
-        #             # 此处可能会出现进度超过100%，未对数值进行纠正
-        #             progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
-        #             progress = round(progress, 1)
-        #             if progress < 100:
-        #                 self.progress_signal.emit(progress)
-        #             else:
-        #                 self.progress_signal.emit(100)
-        #                 self.play_button.setIcon(self.finish_icon)
-        #                 self.play_button.setText("完成")
-        #                 self.play_button.setEnabled(False)
-        #     else:
-        #         process.terminate()
-
-        # 3
-        # while self.download_flag:
-        #     process.poll()
-        #     if process.returncode is not None:
-        #         break
-        #     line = process.stdout.readline()
-        #     print(line)
-        #     duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
-        #     if duration_res is not None:
-        #         duration = duration_res.groupdict()['duration']
-        #         duration = re.sub(r',', '', duration)
-        #         print(duration, self.get_seconds(duration))
-        #
-        #     result = re.search(r'\stime=(?P<time>\S+)', line)
-        #     if result is not None:
-        #         elapsed_time = result.groupdict()['time']
-        #         # 此处可能会出现进度超过100%，未对数值进行纠正
-        #         progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
-        #         progress = round(progress, 1)
-        #         if progress < 100:
-        #             self.progress_signal.emit(progress)
-        #         else:
-        #             self.progress_signal.emit(100)
-        #             self.play_button.setIcon(self.finish_icon)
-        #             self.play_button.setText("完成")
-        #             self.play_button.setEnabled(False)
-        # process.terminate()
-
-        # 4
-        while process.poll() is None:
+        duration = None
+        while process.poll() is None: #轮询进程状态
             if not self.download_flag:
+                # 处理暂停逻辑
                 try:
-                    print(180, self.current_value)
                     process.stdin.write('q')
                     process.communicate()
                     os.remove(save_path)
-                    self.current_value = math.ceil(progress)
                     self.progress_pause.emit(True)
                     self.tip_signal.emit('')
-                    print(185, self.current_value)
+                    # 保存当前进度值到数据库
+                    current_value = self.get_current_value()
                     sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
-                    values = (self.current_value, self.item_video_info['bvid'])
+                    values = (current_value, self.item_video_info['bvid'])
                     lock.acquire()
                     cursor.execute(sql, values)
                     conn.commit()
-                except:
+                except Exception as e:
                     conn.rollback()
                     QMessageBox.warning(self, "错误", f"'{self.item_video_info['video_title']}的下载进度保存未成功'")
                 finally:
                     lock.release()
                 break
             else:
-                time.sleep(0.1)
-                line = process.stdout.readline()
-                print(line)
-                duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
-                if duration_res is not None:
-                    duration = duration_res.groupdict()['duration']
-                    duration = re.sub(r',', '', duration)
-                    print(duration, self.get_seconds(duration))
-
-                result = re.search(r'\stime=(?P<time>\S+)', line)
-                bitrate_res = re.search('\sbitrate=\s*(?P<bitrate>\S+)', line)
-                if result is not None and bitrate_res is not None:
-                    elapsed_time = result.groupdict()['time']
-                    bitrate = bitrate_res.groupdict()['bitrate']
-                    print(bitrate)
-                    # 此处可能会出现进度超过100%，未对数值进行纠正
-                    progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
-                    progress = round(progress, 1)
+                line = process.stdout.readline() #得到日志信息
+                #print(line)
+                # 提取视频总时长
+                if not duration:
+                    duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
+                    if duration_res:
+                        duration = duration_res.groupdict()['duration'].replace(',', '')
+                        duration_seconds = self.get_seconds(duration)
+                # 提取当前时间并计算进度
+                time_res = re.search(r'\stime=(?P<time>\S+)', line)
+                if time_res and duration:
+                    elapsed_time = time_res.groupdict()['time']
+                    elapsed_seconds = self.get_seconds(elapsed_time)
+                    progress = (elapsed_seconds / duration_seconds) * 100
+                    progress = min(round(progress, 1), 100)  # 确保不超过100%
                     self.set_current_value(math.ceil(progress))
-                    if progress >= self.current_value:
-                        if progress <= 99:
-                            self.progress_signal.emit(progress)
-                            self.tip_signal.emit(bitrate)
-                        else:
-                            try:
-                                sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
-                                values = (100, self.item_video_info['bvid'])
-                                lock.acquire()
-                                cursor.execute(sql, values)
-                                conn.commit()
-                                self.progress_signal.emit(100)
-                                self.tip_signal.emit('')
-                                self.progress_finish_update.emit(self.item_video_info)
-                                self.play_button.setIcon(self.finish_icon)
-                                self.play_button.setText("完成")
-                                self.progress_pause.emit(True)
-                                self.play_button.setEnabled(False)
-                            except:
-                                conn.rollback()
-                                QMessageBox.warning(self, "错误", f"'{self.item_video_info['video_title']}的下载进度保存未成功'")
-                            lock.release()
-                    else:
-                        self.tip_signal.emit("0.0kbits/s")
-        # 5
-        # while process.poll() is None:
-        #     line = process.stdout.readline()
-        #     print(line)
-        #     duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
-        #     if duration_res is not None:
-        #         duration = duration_res.groupdict()['duration']
-        #         duration = re.sub(r',', '', duration)
-        #         print(duration, self.get_seconds(duration))
-        #
-        #     result = re.search(r'\stime=(?P<time>\S+)', line)
-        #     if result is not None:
-        #         elapsed_time = result.groupdict()['time']
-        #         # 此处可能会出现进度超过100%，未对数值进行纠正
-        #         progress = (self.get_seconds(elapsed_time) / self.get_seconds(duration)) * 100
-        #         progress = round(progress, 1)
-        #         if progress < 100:
-        #             self.progress_signal.emit(progress)
-        #         else:
-        #             self.progress_signal.emit(100)
-        #             self.play_button.setIcon(self.finish_icon)
-        #             self.play_button.setText("完成")
-        #             self.play_button.setEnabled(False)
-        #     while not self.download_flag:
-        #         self.sleep(1)
-        #         print(process.stdout.readline())
-        #         if self.download_flag:
-        #             print(230)
-        #             break
+                    self.progress_signal.emit(progress)
+                    # 更新实时速度
+                    bitrate_res = re.search(r'\sbitrate=\s*(?P<bitrate>\S+)', line)
+                    if bitrate_res:
+                        self.tip_signal.emit(bitrate_res.group('bitrate'))
+
+        # 进程结束后强制设置进度为100%
+        if self.download_flag:  # 仅在正常完成时更新
+            self.progress_signal.emit(100)
+            self.tip_signal.emit('')
+            self.play_button.setIcon(self.finish_icon)
+            self.play_button.setText("完成")
+            self.play_button.setEnabled(False)
+            # 更新数据库
+            try:
+                sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
+                values = (100, self.item_video_info['bvid'])
+                lock.acquire()
+                cursor.execute(sql, values)
+                conn.commit()
+                self.progress_finish_update.emit(self.item_video_info)
+            except Exception as e:
+                conn.rollback()
+                QMessageBox.warning(self, "错误", f"进度保存失败: {str(e)}")
+            finally:
+                lock.release()
 
     def remove_data(self, video_name, path, save_path):
         video_path = os.path.join(path, video_name + '.mp4')
