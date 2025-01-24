@@ -14,8 +14,8 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMessageBox
 
 # 连接数据库
-import connect
-from asset import resources
+from octopus import connect
+from octopus.asset import resources
 
 cursor, conn, lock = connect.connect()
 

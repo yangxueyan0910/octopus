@@ -3,8 +3,8 @@ import random
 import time
 from queue import Queue
 
-import connect
-from asset import resources
+from octopus import connect
+from octopus.asset import resources
 
 from PyQt5.QtCore import Qt, QMutex, QWaitCondition, QTimer
 from PyQt5.QtGui import QIcon
@@ -66,9 +66,9 @@ class DownloadVideosWindow(QTabWidget):
         table_header = [
             {"field": "name", "text": "名称", 'width': 400},
             {"field": "processing", "text": "下载进度", 'width': 450},
-            {"field": "operator", "text": "开始/暂停", 'width': 140},
-            {"field": "cancel", "text": "取消", 'width': 80},
-            {"field": "bitrate", "text": "实时速度", 'width': 200},
+            {"field": "operator", "text": "", 'width': 140},
+            {"field": "cancel", "text": "", 'width': 100},
+            {"field": "bitrate", "text": "实时速度", 'width': 180},
         ]
         for idx, info in enumerate(table_header):  # idx起始默认0，info代表每个字典
             item = QTableWidgetItem()
@@ -225,6 +225,8 @@ class DownloadVideosWindow(QTabWidget):
         # 创建进度条
         progress_bar = QProgressBar(self)
         progress_bar.setValue(0)
+        progress_bar.setFormat("%p%")  # 显示百分比
+        progress_bar.setTextVisible(True)  # 启用文本显示
         progress_bar.setStyleSheet("""
             QProgressBar {
                 border: none;
@@ -252,15 +254,13 @@ class DownloadVideosWindow(QTabWidget):
         time.sleep(1)
 
         # 开始按钮
-        # start_icon = QIcon('asset/play.ico')
         play_button = QPushButton(self.start_icon, "开始", self)
-        # play_button.setIcon(self.start_icon)
-        play_button.setStyleSheet("border:none; color:transparent")
+        play_button.setStyleSheet("border:none;")
         play_button.clicked.connect(lambda: self.add_queue(progress_bar))
 
         # 取消按钮
         cancel_button = QPushButton(self.cancel_icon, "取消", self)
-        cancel_button.setStyleSheet("border:none; color:transparent")
+        cancel_button.setStyleSheet("border:none; ")
         cancel_button.clicked.connect(lambda: self.cancel_progress(item_video['bvid']))
 
         self.table_widget.setCellWidget(current_row_count, 1, progress_bar)
@@ -269,7 +269,7 @@ class DownloadVideosWindow(QTabWidget):
 
         self.table_widget.setCellWidget(current_row_count, 3, cancel_button)
         # 创建线程
-        from dialogs.utils.download_threads import DownloadInfoThread
+        from octopus.dialogs.utils.download_threads import DownloadInfoThread
         thread = DownloadInfoThread(self.basedir, item_video, play_button, current_row_count, progress_bar, tip_item, self)
         thread.current_value = item_video['finish_flag']
         thread.progress_signal.connect(progress_bar.setValue)
