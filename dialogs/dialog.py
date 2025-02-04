@@ -1,13 +1,12 @@
 import time
 
-import connect
+from octopus import connect
 
 from PyQt5.QtCore import Qt, QRect, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QCheckBox, QMessageBox, QHBoxLayout, \
     QLineEdit, QTableWidgetItem, QTableWidget, QHeaderView, QStyleOptionButton, QStyle, QWidget
 
-from dialogs.download_window.download_window import DownloadVideosWindow
-
+from octopus.dialogs.download_window.download_window import DownloadVideosWindow
 # 连接数据库
 cursor, conn, lock = connect.connect()
 
@@ -112,7 +111,7 @@ class GetVideosWindow(QWidget):
             print(self.label_status)
             return
         print("正在解析链接url: ", url)
-        from dialogs.utils.analysis_url_threads import AnalysisUrlThread
+        from octopus.dialogs.utils.analysis_url_threads import AnalysisUrlThread
         self.thread = thread = AnalysisUrlThread(url, self)
         thread.process.connect(self.init_task_info_callback)
         thread.success.connect(self.init_table_callback)

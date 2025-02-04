@@ -62,44 +62,36 @@ class AnalysisUrlThread(QThread):
         # pattern4 = r'https://search\.bilibili\.com/video\?keyword=([^&]+)'
         if re.match(video_url_pattern1, html_url):
             response = self.get_response(html_url)
-            '''print(response.text)'''
+            #print(response.text)
             # 获取是否有合集的信号
             json_data_1 = json.loads(
                 re.findall('<script>window.__INITIAL_STATE__=(.*?);\(function\(\){var s;', response.text)[0])
-            print(56, json_data_1)
-
+            #print("window.__INITIAL_STATE__中的json内容：", json_data_1)
             is_season_display = json_data_1['videoData']['is_season_display']
             self.is_season_display = is_season_display
-            print(is_season_display)
             # 获取作者的名字
             author_name = json_data_1['videoData']['owner']['name']
-            print("author: ", author_name)
             self.process.emit("正在解析数据源...")
-             #video_info列表
             video_info_list = []
 
             if is_season_display:
-                print(json_data_1['videoData'])
+                #print(json_data_1['videoData'])
                 total = len(json_data_1['videoData']['ugc_season']['sections'][0]['episodes'])
-                print(total)
                 for i, item in enumerate(json_data_1['videoData']['ugc_season']['sections'][0]['episodes']):
                     if self.stop:
                         break
-                    # bvid_list[i] = item['bvid']
-                    print(item['bvid'])
                     bvid = item['bvid']
                     item_url = "https://www.bilibili.com/video/" + str(item['bvid'])
-                    print(item_url)
                     item_res = self.get_response(item_url).text
                     # 每个视频的标题
-                    item_title = re.search('<title data-vue-meta="true">(.*?)_哔哩哔哩_bilibili<\/title>',item_res).group(1)
-                    print(79, item_title)
-                    # item_title = re.sub(r'[\/:*?"<>|]', '', item_title)  # 去除双引号
-                    item_title=re.sub(r'[\/:*?"<>|\s]', '', item_title)
+                    raw_title = re.search('<title data-vue-meta="true">(.*?)_哔哩哔哩_bilibili<\/title>',item_res).group(1)
+                    raw_title=re.sub(r'[\/:*?"<>|\s]', '', raw_title) #去除双引号
+                    item_title = self.format_title(i + 1, total, raw_title)  #注意i从0开始
+                    print("合集中的单个视频标题：", item_title)
                     item_video_info = [item_title, item_url, bvid]
                     video_info_list.append([])
                     video_info_list[i] = item_video_info
-                    print(video_info_list[i])
+                    print(f"video_info_list[{i}]：",video_info_list[i])
                     self.process.emit("正在解析数据源... {}%".format(round((i + 1) / total, 2) * 100))
                     # 设置保存个数
                     # if i == 1:
@@ -109,24 +101,25 @@ class AnalysisUrlThread(QThread):
                 # 获取视频标题
                 bvid1 = json_data_1['videoData']['bvid']
                 total=len(json_data_1['videoData']['pages'])
-                print(total)
                 video_info_list=[]
                 if total==1:
-                    element = (json_data_1['videoData']['pages'][0]['part'])
-                    re.sub(r'[\/:*?"<>|\s]', '', element)
+                    raw_element = (json_data_1['videoData']['pages'][0]['part'])
+                    raw_element=re.sub(r'[\/:*?"<>|\s]', '', raw_element)
+                    element=self.format_title(1, total, raw_element)
                     html_url = ('https://www.bilibili.com/video/' + str(bvid1))
                     item_video_info=[element, html_url, bvid1]
                     video_info_list.append(item_video_info)
-                    print(video_info_list[0])
+                    print("video_info_list[0]：",video_info_list[0])
                     time.sleep(0.2)
                 else:
                     for i in range(0,total):
-                      element=(json_data_1['videoData']['pages'][i]['part'])
-                      re.sub(r'[\/:*?"<>|\s]', '', element)#将字符串element中的/、 :、*、?、 "、 <、 >、|和空白字符\s替换为空字符串''
+                      raw_element=(json_data_1['videoData']['pages'][i]['part'])
+                      raw_element=re.sub(r'[\/:*?"<>|\s]', '', raw_element)#将字符串raw_element中的/、 :、*、?、 "、 <、 >、|和空白字符\s替换为空字符串''
+                      element=self.format_title(i+1, total, raw_element)
                       html_url=('https://www.bilibili.com/video/'+str(bvid1)+'/?p='+str(i+1))#如网址“https://www.bilibili.com/video/BV1V54y1y7c4/?p=2”
                       item_video_info=[element,html_url,bvid1]
                       video_info_list.append(item_video_info)
-                      print(video_info_list[i])
+                      print(f"video_info_list[{i}]：",video_info_list[i])
                       time.sleep(0.2)
                       self.process.emit("正在解析数据源... {}%".format(round((i + 1) / total, 2) * 100))
 
@@ -265,8 +258,9 @@ class AnalysisUrlThread(QThread):
                     if self.stop:
                         break
                     bvid = item['bvid']
-                    item_title = item['title']
-                    item_title = re.sub(r'[\/:*?"<>|\s]', '', item_title) #将字符串 element 中的/、 :、*、?、 "、 <、 >、|和空白字符\s替换为空字符串''
+                    raw_title = item['title']
+                    raw_title = re.sub(r'[\/:*?"<>|\s]', '', raw_title)
+                    item_title = self.format_title(i + 1, total, raw_title)
                     item_url = "https://www.bilibili.com/video/" + str(bvid)
                     item_video_info = [item_title, item_url, bvid]
 
@@ -280,6 +274,14 @@ class AnalysisUrlThread(QThread):
                     #     return video_info_list, is_season_display, author_name, counter
                 return video_info_list, True, author_name, total
 
+    def format_title(self,index, total, raw_title):
+        #生成标号格式
+        digits = 3 if total >= 100 else 2
+        num_str = f"{index:0{digits}d}"
+        #删除原标题开头的旧标号（匹配数字开头+分隔符）
+        cleaned_title = re.sub(r'^\s*[\d.]+\s*[-.]?\s*', '', raw_title)
+        #拼接新标号
+        return f"{num_str} {cleaned_title}"
 
     def get_response(self, html_url):
         headers = {
