@@ -97,12 +97,11 @@ class GetVideosWindow(QWidget):
     def event_analysis_click(self):
         self.btn_analysis.setEnabled(False)
         self.btn_save.setEnabled(False)
-        if self.table_widget.rowCount() == 0 and self.table_widget.columnCount() == 0:
-            pass
-        else:
-            self.table_widget.setRowCount(0)
-            self.table_widget.clearContents()  # 清空QTableWidget中的数据
-            all_header_combobox.clear()
+        # 清空表格、复选框和视频列表
+        self.table_widget.setRowCount(0)
+        self.table_widget.clearContents()  # 清空QTableWidget中的数据
+        all_header_combobox.clear()
+        self.videos_url_list.clear()  #确保清空旧数据
         url = self.txt_url.text()
         if not url:
             self.init_task_info_callback("网页链接不能为空!")
@@ -125,21 +124,18 @@ class GetVideosWindow(QWidget):
     def event_download_click(self):
         if not GetVideosWindow.download_window:
             GetVideosWindow.download_window = DownloadVideosWindow(self.basedir)
-        # 选中的数量
+        #选中的数量
         counter = 0
-        # 需要下载的视频列表
+        #需要下载的视频列表
         download_videos_list = []
 
-        # 获取选中数据
-        ## 获取选中数据
+        #获取选中数据
         for i in range(self.table_widget.rowCount()):
             if self.table_widget.cellWidget(i, 0).isChecked():
                 counter += 1
                 try:
                     bvid = self.videos_url_list[i]['bvid']
-                    video_url = self.videos_url_list[i]['video_url']  # 新增获取 video_url
-                    print(bvid)
-                    print(video_url)
+                    video_url = self.videos_url_list[i]['video_url']  #新增获取 video_url
                     sql = "SELECT COUNT(*) FROM download_video_list WHERE video_url = ? LIMIT 1"
                     values = (video_url,)
                     cursor.execute(sql, values)
@@ -213,7 +209,7 @@ class GetVideosWindow(QWidget):
     # 检查所有复选框是否被选中
     def check_all_checked(self):
         for i in all_header_combobox:
-            # 若有一个及以上未选中，则取消全选
+            #若有一个及以上未选中，则取消全选
             if not i.isChecked():
                 self.header.set_isOn(False)
                 return

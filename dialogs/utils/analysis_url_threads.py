@@ -63,13 +63,13 @@ class AnalysisUrlThread(QThread):
         if re.match(video_url_pattern1, html_url):
             response = self.get_response(html_url)
             #print(response.text)
-            # 获取是否有合集的信号
+            #获取是否有合集的信号
             json_data_1 = json.loads(
                 re.findall('<script>window.__INITIAL_STATE__=(.*?);\(function\(\){var s;', response.text)[0])
             #print("window.__INITIAL_STATE__中的json内容：", json_data_1)
             is_season_display = json_data_1['videoData']['is_season_display']
             self.is_season_display = is_season_display
-            # 获取作者的名字
+            #获取作者的名字
             author_name = json_data_1['videoData']['owner']['name']
             self.process.emit("正在解析数据源...")
             video_info_list = []
@@ -83,7 +83,7 @@ class AnalysisUrlThread(QThread):
                     bvid = item['bvid']
                     item_url = "https://www.bilibili.com/video/" + str(item['bvid'])
                     item_res = self.get_response(item_url).text
-                    # 每个视频的标题
+                    #每个视频的标题
                     raw_title = re.search('<title data-vue-meta="true">(.*?)_哔哩哔哩_bilibili<\/title>',item_res).group(1)
                     raw_title=re.sub(r'[\/:*?"<>|\s]', '', raw_title) #去除双引号
                     item_title = self.format_title(i + 1, total, raw_title)  #注意i从0开始
@@ -93,17 +93,14 @@ class AnalysisUrlThread(QThread):
                     video_info_list[i] = item_video_info
                     print(f"video_info_list[{i}]：",video_info_list[i])
                     self.process.emit("正在解析数据源... {}%".format(round((i + 1) / total, 2) * 100))
-                    # 设置保存个数
-                    # if i == 1:
-                    #     return video_info_list, is_season_display, author_name, counter
                 return video_info_list, is_season_display, author_name, total
-            else:
-                # 获取视频标题
+            else: #选集或单个视频
                 bvid1 = json_data_1['videoData']['bvid']
                 total=len(json_data_1['videoData']['pages'])
                 video_info_list=[]
                 if total==1:
-                    raw_element = (json_data_1['videoData']['pages'][0]['part'])
+                    #获取单视频标题
+                    raw_element = (json_data_1['videoData']['title'])
                     raw_element=re.sub(r'[\/:*?"<>|\s]', '', raw_element)
                     element=self.format_title(1, total, raw_element)
                     html_url = ('https://www.bilibili.com/video/' + str(bvid1))
@@ -207,7 +204,6 @@ class AnalysisUrlThread(QThread):
                     bvid = item['bvid']
                     item_title = item['title']
                     item_title = re.sub(r'[\/:*?"<>|\s]', '', item_title)
-                    # item_title = re.sub(r'[^\u4e00-\u9fa5]+', '', item_title)  # 去除双引号
                     item_url = "https://www.bilibili.com/video/" + str(bvid)
                     item_video_info = [item_title, item_url, bvid]
                     video_info_list.append([])
@@ -215,9 +211,6 @@ class AnalysisUrlThread(QThread):
                     print(video_info_list[i])
                     time.sleep(0.2)
                     self.process.emit("正在解析数据源... {}%".format(round((i + 1) / total, 2) * 100))
-                    # 设置保存个数
-                    # if i == 1:
-                    #     return video_info_list, is_season_display, author_name, counter
                 return video_info_list, True, author_name, total
 
             else:

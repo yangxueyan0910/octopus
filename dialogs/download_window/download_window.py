@@ -33,9 +33,9 @@ class DownloadVideosWindow(QTabWidget):
         self.wait_cond = QWaitCondition()
         self.queue = Queue()
         self.timer = QTimer(self)
-        # 新增并发控制属性
-        self.max_concurrent = 3  # 最大并发数
-        self.current_tasks = 0  # 当前运行任务数
+        #新增并发控制属性
+        self.max_concurrent = 3  #最大并发数
+        self.current_tasks = 0  # 前运行任务数
 
         self.init_ui()
 
@@ -75,7 +75,7 @@ class DownloadVideosWindow(QTabWidget):
             item.setText(info['text'])
             table_widget.setHorizontalHeaderItem(idx, item)
             table_widget.setColumnWidth(idx, info['width'])
-        # 隐藏水平表头
+        # 显示水平表头
         self.table_widget.horizontalHeader().setVisible(True)
         # 表头显示分割线
         self.table_widget.setShowGrid(True)
@@ -117,7 +117,7 @@ class DownloadVideosWindow(QTabWidget):
         header_layout.addWidget(btn_stop)
 
         # 1.3 创建按钮
-        btn_cancel = QPushButton("全部取消")
+        btn_cancel = QPushButton("全部清空")
         btn_cancel.clicked.connect(self.event_all_cancel)
         header_layout.addWidget(btn_cancel)
 
@@ -126,26 +126,24 @@ class DownloadVideosWindow(QTabWidget):
     # 初始化表格
     def init_table(self):
         try:
-            sql = "SELECT * FROM download_video_list WHERE finish_flag < 100"
+            sql = "SELECT * FROM download_video_list WHERE finish_flag < 100"  #仅加载未完成的任务
             lock.acquire()
             cursor.execute(sql)
             video_info_list = cursor.fetchall()
-            print(video_info_list)
             lock.release()
-
-            # print(current_row_count)
+            # 清空现有表格
+            self.table_widget.setRowCount(0)
+            # 重新添加数据
             for row_list in video_info_list:
-                item_video = {}
-                print(row_list)
-                # 写真实数据
-                item_video['bvid'] = row_list[0]
-                item_video['video_url'] = row_list[1]
-                item_video['video_title'] = row_list[2]
-                item_video['finish_flag'] = row_list[3]
+                item_video = {
+                    'bvid': row_list[1],
+                    'video_url': row_list[0],
+                    'video_title': row_list[2],
+                    'finish_flag': row_list[3]
+                }
                 self.add_table_item(item_video)
-
         except Exception as e:
-            QMessageBox.warning(self, "错误", "未能获取到数据")
+            QMessageBox.warning(self, "错误", f"初始化表格失败: {str(e)}")
 
     # -----header方法区------
     def event_all_start(self):
@@ -187,24 +185,29 @@ class DownloadVideosWindow(QTabWidget):
         if A == QMessageBox.Yes:
             lock.acquire()
             try:
-                for row in range(self.table_widget.rowCount()-1, -1, -1):
+                # 清空队列并停止所有线程
+                while not self.queue.empty():
+                    self.queue.get()
+                for row in range(self.table_widget.rowCount() - 1, -1, -1):
                     processbar = self.table_widget.cellWidget(row, 1)
-                    bvid = processbar.bvid
                     processbar.thread.download_flag = False
+                    bvid = processbar.thread.item_video_info['bvid']
+                    # 删除数据库记录
                     sql = "DELETE FROM download_video_list WHERE bvid = ?"
                     values = (bvid,)
                     cursor.execute(sql, values)
                     conn.commit()
+                    # 移除表格行
                     self.table_widget.removeRow(row)
-            except:
+            except Exception as e:
                 conn.rollback()
-                QMessageBox.warning(self, "错误", "取消下载未成功")
-            lock.release()
+                QMessageBox.warning(self, "错误", f"取消下载失败: {str(e)}")
+            finally:
+                lock.release()
         else:
             return
 
     # -----table方法区------
-
     def add_table_item(self, item_video):
         current_row_count = self.table_widget.rowCount()
         self.table_widget.insertRow(current_row_count)
@@ -251,7 +254,7 @@ class DownloadVideosWindow(QTabWidget):
             }
         """)
         progress_bar.setValue(item_video['finish_flag'])
-        time.sleep(1)
+        time.sleep(0.5)
 
         # 开始按钮
         play_button = QPushButton(self.start_icon, "开始", self)
@@ -438,21 +441,21 @@ class DownloadVideosWindow(QTabWidget):
         table_layout = QHBoxLayout()
         self.finish_table_widget = finish_table_widget = QTableWidget(0, 4)  # (行，列)
         table_header = [
-            {"field": "bvid", "text": "", 'width': 160},
-            {"field": "name", "text": "名称", 'width': 800},
-            {"field": "delete", "text": "", 'width': 60},
-            {"field": "dir_path", "text": "", 'width': 60},
+            {"field": "bvid", "text": "BV号", 'width': 260},
+            {"field": "name", "text": "名称", 'width': 400},
+            {"field": "delete", "text": "", 'width': 100},
+            {"field": "dir_path", "text": "", 'width': 90},
         ]
         for idx, info in enumerate(table_header):  # idx起始默认0，info代表每个字典
             item = QTableWidgetItem()
             item.setText(info['text'])
             finish_table_widget.setHorizontalHeaderItem(idx, item)
             finish_table_widget.setColumnWidth(idx, info['width'])
-        # 隐藏水平表头
-        finish_table_widget.horizontalHeader().setVisible(False)
-        # 表头不显示分割线
+        # 显示水平表头
+        finish_table_widget.horizontalHeader().setVisible(True)
+        # 表头显示分割线
         finish_table_widget.setShowGrid(True)
-        # 表头不显示数字
+        # 表头显示数字
         finish_table_widget.verticalHeader().setVisible(True)
         self.init_finish_table()
 
@@ -470,7 +473,7 @@ class DownloadVideosWindow(QTabWidget):
             lock.acquire()
             cursor.execute(sql)
             video_info_list = cursor.fetchall()
-            print(video_info_list)
+            print("已完成下载的视频列表：",video_info_list)
             lock.release()
 
             # print(current_row_count)
@@ -505,25 +508,23 @@ class DownloadVideosWindow(QTabWidget):
         self.finish_table_widget.setItem(current_row_count, 1, title_item)
 
         # 删除按钮
-        delete_button = QPushButton(self.cancel_icon, "删除", self)
+        delete_button = QPushButton(self.cancel_icon, ".", self) #"."原来是"删除"
         delete_button.setStyleSheet("border:none; color:transparent")
         delete_button.clicked.connect(lambda: self.delete_progress(item_video['bvid']))
 
         # 打开文件夹按钮
-        find_dir_button = QPushButton(self.dir_icon, "目录", self)
-        find_dir_button.setStyleSheet("border:none; color:transparent")
-        find_dir_button.clicked.connect(lambda: self.find_dir(item_video['bvid']))
+        find_dir_button = QPushButton(self.dir_icon, ".", self) #"."原来是"目录"
+        find_dir_button.setStyleSheet("border:none;color:transparent")
+        find_dir_button.clicked.connect(lambda: self.find_dir(item_video['video_url']))
 
         self.finish_table_widget.setCellWidget(current_row_count, 2, delete_button)
-
         self.finish_table_widget.setCellWidget(current_row_count, 3, find_dir_button)
 
     def delete_progress(self, bvid):
-        # 事件发送,有时候我们会想知道是哪个组件发出了一个信号，PyQt5里的sender()方法能搞定这件事
+        #事件发送,有时候我们会想知道是哪个组件发出了一个信号，PyQt5里的sender()方法能搞定这件事
         button = self.finish_table_widget.sender()
         index = self.finish_table_widget.indexAt(button.pos())
         current_row_count = index.row()
-        # print(255, current_row_count)
         A = QMessageBox.warning(self, '警告', '是否确定要删除下载记录', QMessageBox.Yes | QMessageBox.No,
                                 QMessageBox.No)
         if A == QMessageBox.Yes:
@@ -541,18 +542,18 @@ class DownloadVideosWindow(QTabWidget):
         else:
             return
 
-    def find_dir(self, bvid):
+    def find_dir(self, video_url):
         try:
-            sql = 'SELECT save_path FROM download_video_list WHERE bvid = ? limit 1'
-            values = (bvid,)
+            sql = 'SELECT save_path FROM download_video_list WHERE video_url = ? limit 1'
+            values = (video_url,)
             lock.acquire()
             cursor.execute(sql, values)
             result = cursor.fetchall()
             lock.release()
             save_path = result[0][0]
-            print(390, save_path)
-            folder_path = os.path.dirname("{}\\".format(save_path))  # 获取文件所在文件夹路径
-            os.startfile(folder_path)  # 打开文件夹
+            print("保存的路径：", save_path)
+            folder_path = os.path.dirname("{}\\".format(save_path))  #获取文件所在文件夹路径
+            os.startfile(folder_path)  #打开文件夹
         except Exception as e:
             QMessageBox.warning(self, "错误", "目录不存在或者已删除")
 
