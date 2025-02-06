@@ -1,5 +1,4 @@
 import time
-
 from octopus import connect
 
 from PyQt5.QtCore import Qt, QRect, pyqtSignal
@@ -14,7 +13,6 @@ all_header_combobox = []
 
 class GetVideosWindow(QWidget):
     download_window = None
-
     def __init__(self, basedir, *args, **kwargs):
         super(GetVideosWindow, self).__init__(*args, **kwargs)
         self.thread = None
@@ -124,11 +122,26 @@ class GetVideosWindow(QWidget):
     def event_download_click(self):
         if not GetVideosWindow.download_window:
             GetVideosWindow.download_window = DownloadVideosWindow(self.basedir)
-        #选中的数量
+
+        #获取下载窗口的实例
+        download_window = GetVideosWindow.download_window
+        download_window.show()
+
+        #确保已将需要下载的视频项添加到下载窗口的表格中，再触发下载
+        def delayed_start():
+            #初始化表格（从数据库加载未完成的任务）
+            download_window.init_table()
+            #再触发自动下载
+            download_window.event_all_start(automatic=True)
+
+        #使用定时器延迟执行，确保UI更新完成
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(100, delayed_start)  #延迟100毫秒确保UI加载完
+
+        #选中的视频数量
         counter = 0
         #需要下载的视频列表
         download_videos_list = []
-
         #获取选中数据
         for i in range(self.table_widget.rowCount()):
             if self.table_widget.cellWidget(i, 0).isChecked():
@@ -170,12 +183,6 @@ class GetVideosWindow(QWidget):
         if counter <= 0:
             QMessageBox.warning(self, "警告", "当前未选中任何数据")
         else:
-            # 移除已下载的列表元素
-
-            # 进入下载页面
-            # self.download_window = DownloadVideosWindow(self.basedir, download_videos_list)
-            # self.download_window.setWindowModality(Qt.NonModal)
-            # self.download_window.show()
             pass
 
     def init_table_callback(self, title, video_url, bvid):

@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QTabWidget, QDesktopWidget, QApplication
-BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
+BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0])) #获取当前脚本的绝对路径，并提取其所在的目录路径
 # 连接数据库
 # cursor, conn = connect.connect()
 

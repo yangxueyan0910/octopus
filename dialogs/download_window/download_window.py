@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QPushButton,  QMessageBox, QHBoxLayout,
     QTableWidgetItem, QTableWidget, QWidget, \
     QTabWidget, QProgressBar, QMenu
 
-# 连接数据库
+#连接数据库
 cursor, conn, lock = connect.connect()
 
 
@@ -20,11 +20,9 @@ import cgitb
 cgitb.enable(format='text')
 
 class DownloadVideosWindow(QTabWidget):
-
     def __init__(self, basedir, *args, **kwargs):
         super(DownloadVideosWindow, self).__init__(*args, **kwargs)
         self.basedir = basedir
-        # self.download_video_list = download_video_list
         self.pause_icon = QIcon(':/pause.ico')
         self.start_icon = QIcon(':/play.ico')
         self.cancel_icon = QIcon(':/cancel.ico')
@@ -105,11 +103,11 @@ class DownloadVideosWindow(QTabWidget):
         # 弹簧
         header_layout.addStretch()
 
-        # 1.1 创建按钮，加入header_layout
-        btn_start = QPushButton("全部开始")
-        # btn_start.setFixedHeight(100)
-        btn_start.clicked.connect(self.event_all_start)
-        header_layout.addWidget(btn_start)
+        # # 1.1 创建按钮，加入header_layout
+        # btn_start = QPushButton("全部开始")
+        # # btn_start.setFixedHeight(100)
+        # btn_start.clicked.connect(self.event_all_start)
+        # header_layout.addWidget(btn_start)
 
         # 1.2 创建按钮
         btn_stop = QPushButton("全部暂停")
@@ -146,26 +144,26 @@ class DownloadVideosWindow(QTabWidget):
             QMessageBox.warning(self, "错误", f"初始化表格失败: {str(e)}")
 
     # -----header方法区------
-    def event_all_start(self):
-        response = QMessageBox.warning(self, '警告', '是否要全部开始当前视频下载进程', QMessageBox.Yes | QMessageBox.No,
-                                QMessageBox.No)
-        if response == QMessageBox.Yes:
-            #先清空队列
-            while not self.queue.empty():
-                self.queue.get()
-            #将所有任务加入队列
-            for row in range(self.table_widget.rowCount()):
-                processbar = self.table_widget.cellWidget(row, 1)
-                if processbar.play_button.text() == "开始":
-                    self.queue.put(processbar)
-            #启动初始任务
-            self.add_download_pool(True)
-            # for row in range(self.table_widget.rowCount()):
-            #     processbar = self.table_widget.cellWidget(row, 1)
-            #     if processbar.play_button.text() == "开始":
-            #         self.add_queue(processbar)
-        else:
-            return
+    def event_all_start(self,automatic=False):
+        if not automatic:
+            #手动触发时保留确认对话框
+            response = QMessageBox.warning(self, '警告', '是否要全部开始当前视频下载进程',
+                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if response != QMessageBox.Yes:
+                return
+
+            #确保队列清空并重新填充
+        while not self.queue.empty():
+            self.queue.get()
+
+            #遍历所有行，将未开始的任务加入队列
+        for row in range(self.table_widget.rowCount()):
+            processbar = self.table_widget.cellWidget(row, 1)
+            if processbar.play_button.text() == "开始":
+                self.queue.put(processbar)
+
+            #强制触发下载池
+        self.add_download_pool(True)
 
     def event_all_stop(self):
         A = QMessageBox.warning(self, '警告', '是否要全部暂停当前视频下载进程', QMessageBox.Yes | QMessageBox.No,
@@ -219,7 +217,7 @@ class DownloadVideosWindow(QTabWidget):
         title_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.table_widget.setItem(current_row_count, 0, title_item)
 
-        # 设置下载进度和提示
+        # 显示下载速度
         tip_item = QTableWidgetItem('')
         tip_item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         tip_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
@@ -298,10 +296,8 @@ class DownloadVideosWindow(QTabWidget):
         tip_item.setText(tip)
 
     def start_progress(self, progress_bar):
-        # widget = self.table_widget.cellWidget(current_row_count, 2)
-        # self.queue.put(progress_bar)
         if progress_bar.play_button.text() == "开始":
-            progress_bar.setRange(0, 0)
+            progress_bar.setRange(0, 100)
             progress_bar.thread.download_flag = True
             progress_bar.thread.start()
             progress_bar.play_button.setIcon(self.pause_icon)
@@ -354,7 +350,6 @@ class DownloadVideosWindow(QTabWidget):
                 self.start_progress(processbar)
 
     # 进度条完成后进行表格更新
-    # def table_update(self, item_video_url, item_video_title, item_video_bvid, item_video_finish_flag):
     def table_update(self, item_video):
         thread = self.table_widget.sender()
         button = thread.play_button
@@ -481,8 +476,8 @@ class DownloadVideosWindow(QTabWidget):
                 item_video = {}
                 print(row_list)
                 # 写真实数据
-                item_video['bvid'] = row_list[0]
-                item_video['video_url'] = row_list[1]
+                item_video['bvid'] = row_list[1]
+                item_video['video_url'] = row_list[0]
                 item_video['video_title'] = row_list[2]
                 self.add_finish_table_item(item_video)
 
