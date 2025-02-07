@@ -207,7 +207,7 @@ class DownloadInfoThread(QThread):
         save_path = re.sub(r"(videos)", r"\1\\", save_path)
         try:
             sql = "UPDATE download_video_list SET save_path = ? WHERE video_url = ?"
-            values = (save_path, self.item_video_info['bvid'])
+            values = (save_path, self.item_video_info['video_url'])
             lock.acquire()
             cursor.execute(sql, values)
             conn.commit()

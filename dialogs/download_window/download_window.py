@@ -297,7 +297,7 @@ class DownloadVideosWindow(QTabWidget):
 
     def start_progress(self, progress_bar):
         if progress_bar.play_button.text() == "开始":
-            progress_bar.setRange(0, 100)
+            progress_bar.setRange(0, 0)
             progress_bar.thread.download_flag = True
             progress_bar.thread.start()
             progress_bar.play_button.setIcon(self.pause_icon)
@@ -545,12 +545,15 @@ class DownloadVideosWindow(QTabWidget):
             cursor.execute(sql, values)
             result = cursor.fetchall()
             lock.release()
-            save_path = result[0][0]
+            if result and result[0][0]:
+                save_path = result[0][0]
+                folder_path = os.path.dirname(save_path)  #获取文件所在目录
+                os.startfile(folder_path)  #打开目录
+            else:
+                QMessageBox.warning(self, "错误", "未找到保存路径")
             print("保存的路径：", save_path)
-            folder_path = os.path.dirname("{}\\".format(save_path))  #获取文件所在文件夹路径
-            os.startfile(folder_path)  #打开文件夹
         except Exception as e:
-            QMessageBox.warning(self, "错误", "目录不存在或者已删除")
+            QMessageBox.warning(self, "错误", f"打开目录失败: {str(e)}")
 
     def finish_table_right_menu(self, pos):
         # 只有选中一行时，才支持右键
