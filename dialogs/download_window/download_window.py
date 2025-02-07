@@ -226,8 +226,6 @@ class DownloadVideosWindow(QTabWidget):
         # 创建进度条
         progress_bar = QProgressBar(self)
         progress_bar.setValue(0)
-        progress_bar.setFormat("%p%")  # 显示百分比
-        progress_bar.setTextVisible(True)  # 启用文本显示
         progress_bar.setStyleSheet("""
             QProgressBar {
                 border: none;
@@ -252,7 +250,6 @@ class DownloadVideosWindow(QTabWidget):
             }
         """)
         progress_bar.setValue(item_video['finish_flag'])
-        time.sleep(0.5)
 
         # 开始按钮
         play_button = QPushButton(self.start_icon, "开始", self)
@@ -297,7 +294,7 @@ class DownloadVideosWindow(QTabWidget):
 
     def start_progress(self, progress_bar):
         if progress_bar.play_button.text() == "开始":
-            progress_bar.setRange(0, 0)
+            progress_bar.setRange(0, 100)
             progress_bar.thread.download_flag = True
             progress_bar.thread.start()
             progress_bar.play_button.setIcon(self.pause_icon)
@@ -314,7 +311,6 @@ class DownloadVideosWindow(QTabWidget):
         index = self.table_widget.indexAt(button.pos())
         current_row_count = index.row()
         processbar = self.table_widget.cellWidget(current_row_count, 1)
-        # print(255, current_row_count)
         A = QMessageBox.warning(self, '警告', '是否确定要删除当前视频下载进程', QMessageBox.Yes | QMessageBox.No,
                                 QMessageBox.No)
         if A == QMessageBox.Yes:

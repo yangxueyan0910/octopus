@@ -27,7 +27,6 @@ class DownloadInfoThread(QThread):
     progress_finish = pyqtSignal(bool)
     progress_finish_update = pyqtSignal(object)
     progress_pause = pyqtSignal(bool)
-    # save_path_signal = pyqtSignal(str)
 
     def __init__(self, basedir, item_video_info, play_button, row_index, progress_bar, tip_item, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,9 +55,9 @@ class DownloadInfoThread(QThread):
             video_url = self.item_video_info['video_url']
             title = self.item_video_info['video_title']
             title = re.sub('\W+', '',title).replace("_", '')
-            print(self.item_video_info)
+            print("下载线程中的item_video_info：",self.item_video_info)
             self.tip_signal.emit("正在获取数据源")
-            time.sleep(0.5)
+            time.sleep(0.3)
             video_info, author_name = self.get_video_info(html_url=video_url)
             # 音频的二进制数据
             audio_content = self.get_response(video_info[0]).content
@@ -130,9 +129,8 @@ class DownloadInfoThread(QThread):
 
     def compute_progress_and_send_progress(self, process, save_path):
         duration = None
-        while process.poll() is None: #轮询进程状态
-            if not self.download_flag:
-                # 处理暂停逻辑
+        while process.poll() is None:#轮询进程状态
+            if not self.download_flag:#处理暂停逻辑
                 try:
                     process.stdin.write('q')
                     process.communicate()
@@ -140,9 +138,9 @@ class DownloadInfoThread(QThread):
                     self.progress_pause.emit(True)
                     self.tip_signal.emit('')
                     # 保存当前进度值到数据库
-                    current_value = self.get_current_value()
-                    sql = "UPDATE download_video_list SET finish_flag = ? WHERE bvid = ?"
-                    values = (current_value, self.item_video_info['bvid'])
+                    self.current_value = self.get_current_value()
+                    sql = "UPDATE download_video_list SET finish_flag = ? WHERE video_url = ?"
+                    values = (self.current_value, self.item_video_info['video_url'])
                     lock.acquire()
                     cursor.execute(sql, values)
                     conn.commit()
@@ -154,7 +152,7 @@ class DownloadInfoThread(QThread):
                 break
             else:
                 line = process.stdout.readline() #得到日志信息
-                #print(line)
+                print(line)
                 # 提取视频总时长
                 if not duration:
                     duration_res = re.search(r'\sDuration: (?P<duration>\S+)', line)
@@ -167,10 +165,10 @@ class DownloadInfoThread(QThread):
                     elapsed_time = time_res.groupdict()['time']
                     elapsed_seconds = self.get_seconds(elapsed_time)
                     progress = (elapsed_seconds / duration_seconds) * 100
-                    progress = min(round(progress, 1), 100)  # 确保不超过100%
+                    progress = min(round(progress, 1), 100)  #确保不超过100
                     self.set_current_value(math.ceil(progress))
-                    self.progress_signal.emit(progress)
-                    # 更新实时速度
+                    self.progress_signal.emit(math.ceil(progress)) #这里得是整数！不然进度条不显示
+                    #更新实时速度
                     bitrate_res = re.search(r'\sbitrate=\s*(?P<bitrate>\S+)', line)
                     if bitrate_res:
                         self.tip_signal.emit(bitrate_res.group('bitrate'))
