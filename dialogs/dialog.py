@@ -3,7 +3,7 @@ from octopus import connect
 
 from PyQt5.QtCore import Qt, QRect, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QCheckBox, QMessageBox, QHBoxLayout, \
-    QLineEdit, QTableWidgetItem, QTableWidget, QHeaderView, QStyleOptionButton, QStyle, QWidget
+    QLineEdit, QTableWidgetItem, QTableWidget, QHeaderView, QStyleOptionButton, QStyle, QWidget, QStyleOptionHeader
 
 from octopus.dialogs.download_window.download_window import DownloadVideosWindow
 # 连接数据库
@@ -71,7 +71,6 @@ class GetVideosWindow(QWidget):
         table_widget.setColumnWidth(0, 30)  # 设置第0列宽度
         table_widget.setColumnWidth(1, 1400)  # 设置第1列宽度
         header.select_all_clicked.connect(header.change_state)  # 行表头复选框单击信号与槽
-        # table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 设置表头自适应
 
         table_layout.addWidget(table_widget)
         layout.addLayout(table_layout)
@@ -202,7 +201,7 @@ class GetVideosWindow(QWidget):
         # 单元格添加标题
         cell_title = QTableWidgetItem(title)
         cell_title.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-        cell_title.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        cell_title.setTextAlignment(Qt.AlignLeft| Qt.AlignVCenter)
         self.table_widget.setItem(self.current_row_count, 1, cell_title)
 
         video_info = {}
@@ -264,14 +263,16 @@ class CheckBoxHeader(QHeaderView):
     def __init__(self, orientation=Qt.Horizontal, parent=None):
         super(CheckBoxHeader, self).__init__(orientation, parent)
         self.isOn = False
-
-    def paintSection(self, painter, rect, logicalIndex):
-        painter.save()
-        super(CheckBoxHeader, self).paintSection(painter, rect, logicalIndex)
-        painter.restore()
+    def paintSection(self, painter, rect, logicalIndex): #负责绘制表头部分
+        # 仅对第0列（复选框列）调用父类绘制
+        if logicalIndex != 1:
+            painter.save()
+            super(CheckBoxHeader, self).paintSection(painter, rect, logicalIndex)
+            painter.restore()
 
         self._y_offset = int((rect.height() - self._width) / 2.)
 
+        # 处理复选框列（索引0）
         if logicalIndex == 0:
             option = QStyleOptionButton()
             option.rect = QRect(rect.x() + self._x_offset, rect.y() + self._y_offset, self._width, self._height)
@@ -281,6 +282,16 @@ class CheckBoxHeader(QHeaderView):
             else:
                 option.state |= QStyle.State_Off
             self.style().drawControl(QStyle.CE_CheckBox, option, painter)
+        # 处理文本列（索引1）
+        elif logicalIndex == 1:
+            option = QStyleOptionHeader()
+            self.initStyleOption(option)
+            option.textAlignment = Qt.AlignLeft | Qt.AlignVCenter  # 强制左对齐
+            option.text = self.model().headerData(logicalIndex, self.orientation(), Qt.DisplayRole)
+            option.rect = rect.adjusted(5, 0, -5, 0)  # 左右边距调整
+            painter.save()
+            self.style().drawControl(QStyle.CE_Header, option, painter)
+            painter.restore()
 
     def mousePressEvent(self, event):
         index = self.logicalIndexAt(event.pos())

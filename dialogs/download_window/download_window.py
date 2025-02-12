@@ -79,6 +79,7 @@ class DownloadVideosWindow(QTabWidget):
         self.table_widget.setShowGrid(True)
         # 表头显示数字
         self.table_widget.verticalHeader().setVisible(True)
+        self.table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.init_table()
 
         # 开启右键设置(开启右键复制功能， 在表格中点击右键时， 自动触发 right_menu 函数)
@@ -109,10 +110,10 @@ class DownloadVideosWindow(QTabWidget):
         # btn_start.clicked.connect(self.event_all_start)
         # header_layout.addWidget(btn_start)
 
-        # 1.2 创建按钮
-        btn_stop = QPushButton("全部暂停")
-        btn_stop.clicked.connect(self.event_all_stop)
-        header_layout.addWidget(btn_stop)
+        # # 1.2 创建按钮
+        # btn_stop = QPushButton("全部暂停")
+        # btn_stop.clicked.connect(self.event_all_stop)
+        # header_layout.addWidget(btn_stop)
 
         # 1.3 创建按钮
         btn_cancel = QPushButton("全部清空")
@@ -213,13 +214,13 @@ class DownloadVideosWindow(QTabWidget):
 
         # 设置标题
         title_item = QTableWidgetItem(item_video['video_title'])
-        title_item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        title_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         title_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.table_widget.setItem(current_row_count, 0, title_item)
 
         # 显示下载速度
         tip_item = QTableWidgetItem('')
-        tip_item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        tip_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         tip_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.table_widget.setItem(current_row_count, 4, tip_item)
 
@@ -448,6 +449,7 @@ class DownloadVideosWindow(QTabWidget):
         finish_table_widget.setShowGrid(True)
         # 表头显示数字
         finish_table_widget.verticalHeader().setVisible(True)
+        finish_table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.init_finish_table()
 
         # 开启右键设置(开启右键复制功能， 在表格中点击右键时， 自动触发 right_menu 函数)
@@ -488,13 +490,13 @@ class DownloadVideosWindow(QTabWidget):
 
         # 设置bvid
         bvid_item = QTableWidgetItem(item_video['bvid'])
-        bvid_item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        bvid_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bvid_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.finish_table_widget.setItem(current_row_count, 0, bvid_item)
 
         # 设置标题
         title_item = QTableWidgetItem(item_video['video_title'])
-        title_item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        title_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         title_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.finish_table_widget.setItem(current_row_count, 1, title_item)
 
