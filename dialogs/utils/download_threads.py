@@ -55,17 +55,25 @@ class DownloadInfoThread(QThread):
             video_url = self.item_video_info['video_url']
             title = self.item_video_info['video_title']
             title = re.sub('\W+', '',title).replace("_", '')
+
+            #从数据库获取用户选择的路径
+            lock.acquire()
+            cursor.execute("SELECT save_path FROM download_video_list WHERE video_url=? LIMIT 1", (video_url,))
+            save_dir = cursor.fetchone()[0]
+            lock.release()
+
             print("下载线程中的item_video_info：",self.item_video_info)
             self.tip_signal.emit("正在获取数据源")
             time.sleep(0.3)
             video_info, author_name = self.get_video_info(html_url=video_url)
-            # 音频的二进制数据
+            #音频的二进制数据
             audio_content = self.get_response(video_info[0]).content
-            # 视频的二进制数据
+            #视频的二进制数据
             video_content = self.get_response(video_info[1]).content
-            save_folder = os.path.join(self.basedir, "_normal_videos", author_name)
-            save_temp_folder = os.path.join(self.basedir, "_normal_videos", "temp_videos", author_name)
 
+            #使用用户选择的路径
+            save_folder = os.path.join(save_dir, "blibli_videos")
+            save_temp_folder = os.path.join(save_dir, "blibli_videos", "temp_videos")
             if not os.path.exists(save_folder):
                 os.makedirs(save_folder)
             if not os.path.exists(save_temp_folder):
@@ -79,20 +87,17 @@ class DownloadInfoThread(QThread):
                 self.success.emit(f"{title}.mp4 已开始下载...")
             print("mp3、mp4视频内容保存完成")
             self.progress_bar.setRange(0, 100)
-            # 将视频和音频整合
+            #将视频和音频整合
             self.merge_data(video_name=title, temp_path=save_temp_folder, path=save_folder)
-            # self.remove_data(video_name=title, path=save_folder)
             if self.download_flag:
-                # 删除整合前的视频和音频
+                #删除整合前的视频和音频
                 self.remove_data(video_name=title, path=save_temp_folder, save_path=save_folder)
-                from pathlib import Path
-                parent_directory = Path(save_temp_folder).parent
                 import shutil
                 try:
-                    shutil.rmtree(parent_directory)
-                    print(f"Folder '{parent_directory}' deleted successfully.")
+                    shutil.rmtree(save_temp_folder)
+                    print(f"Folder '{save_temp_folder}' deleted successfully.")
                 except OSError as e:
-                    print(f"Error: {parent_directory} - {e}")
+                    print(f"Error: {save_temp_folder} - {e}")
             self.progress_finish_update.emit(self.item_video_info)
         finally:
             if self.download_flag: #仅在正常完成时发送信号
@@ -102,20 +107,13 @@ class DownloadInfoThread(QThread):
         audio_path = os.path.join(temp_path, video_name + '.mp3')
         random_int = random.randint(1, 100000)
         save_path = os.path.join(path, video_name + str(random_int) + '.mp4')
-        # print('视频合成开始：', video_name)
+        #print('视频合成开始：', video_name)
         ffmpeg_path = os.path.join(self.basedir, "ffmpeg.exe")
-        # video_name = video_name.replace(' ','')
         command = f"{ffmpeg_path} -i {video_path} -i {audio_path} -c:v copy -c:a aac -strict experimental -y {save_path}"
         print(command)
-        # command = f"ffmpeg -i {video_path} -i {audio_path} -c:v copy -c:a aac -strict experimental {save_path}"
-        # command = f'ffmpeg -i F:\\myProject\\get_live\\_normal_videos\\{video_name}.mp4 -i F:\\myProject\\get_live\\_normal_videos\\{video_name}.mp3 -acodec copy -vcodec copy F:\\myProject\\get_live\\_normal_videos\\{video_name}-{random_int}.mp4'
-        # subprocess.call(command, shell=True)
-        # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, text=True, shell=True, encoding="utf-8", errors='ignore')
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=0, text=True, encoding="utf-8", errors='ignore')
-        # process = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, text=True, shell=True, encoding="utf-8", errors='ignore')
         self.compute_progress_and_send_progress(process, save_path)
-        # print(process.communicate()[0])
-        # print('视频合成完成', video_name)
+        #print('视频合成完成', video_name)
         self.success.emit(f"{video_name}{str(random_int)}.mp4 开始下载...")
 
     def get_seconds(self, time):
@@ -200,9 +198,9 @@ class DownloadInfoThread(QThread):
         os.remove(video_path)
         os.remove(audio_path)
         self.success.emit(f"{video_name}.mp4 下载已完成")
-        save_path = re.sub(r'(:)', r'\1\\', save_path)
-        save_path = re.sub(r'(octopus)', r'\1\\', save_path)
-        save_path = re.sub(r"(videos)", r"\1\\", save_path)
+        # save_path = re.sub(r'(:)', r'\1\\', save_path)
+        # save_path = re.sub(r'(octopus)', r'\1\\', save_path)
+        # save_path = re.sub(r"(videos)", r"\1\\", save_path)
         try:
             sql = "UPDATE download_video_list SET save_path = ? WHERE video_url = ?"
             values = (save_path, self.item_video_info['video_url'])

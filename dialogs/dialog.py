@@ -4,6 +4,7 @@ from octopus import connect
 from PyQt5.QtCore import Qt, QRect, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QCheckBox, QMessageBox, QHBoxLayout, \
     QLineEdit, QTableWidgetItem, QTableWidget, QHeaderView, QStyleOptionButton, QStyle, QWidget, QStyleOptionHeader
+from PyQt5.QtWidgets import QFileDialog
 
 from octopus.dialogs.download_window.download_window import DownloadVideosWindow
 # 连接数据库
@@ -119,6 +120,12 @@ class GetVideosWindow(QWidget):
         GetVideosWindow.download_window.show()
 
     def event_download_click(self):
+        # 添加文件夹选择对话框
+        save_dir = QFileDialog.getExistingDirectory(self, "选择视频保存路径")
+        if not save_dir:
+            QMessageBox.warning(self, "警告", "请选择有效的保存路径")
+            return
+
         if not GetVideosWindow.download_window:
             GetVideosWindow.download_window = DownloadVideosWindow(self.basedir)
 
@@ -163,7 +170,7 @@ class GetVideosWindow(QWidget):
                             finish_flag = 0
                             self.videos_url_list[i]['finish_flag'] = finish_flag
                             sql_insert = "INSERT INTO download_video_list( bvid,video_url, video_title, finish_flag, save_path) VALUES (?, ?, ?, ?, ?)"
-                            values = ( bvid, video_url,video_title, finish_flag, "暂未设置")
+                            values = ( bvid, video_url,video_title, finish_flag, save_dir)
                             cursor.execute(sql_insert, values)
                             conn.commit()
 
