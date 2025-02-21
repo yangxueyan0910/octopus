@@ -3,8 +3,8 @@ import random
 import time
 from queue import Queue
 
-from octopus import connect
-from octopus.asset import resources
+import connect
+from asset import resources
 
 from PyQt5.QtCore import Qt, QMutex, QWaitCondition, QTimer
 from PyQt5.QtGui import QIcon
@@ -266,7 +266,7 @@ class DownloadVideosWindow(QTabWidget):
         self.table_widget.setCellWidget(current_row_count, 3, cancel_button)
 
         #创建线程
-        from octopus.dialogs.utils.download_threads import DownloadInfoThread
+        from dialogs.utils.download_threads import DownloadInfoThread
         thread = DownloadInfoThread(self.basedir, item_video, play_button, current_row_count, progress_bar, tip_item, self)
         thread.current_value = item_video['finish_flag']
         thread.progress_signal.connect(progress_bar.setValue)

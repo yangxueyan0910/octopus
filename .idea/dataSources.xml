@@ -8,11 +8,11 @@
       <jdbc-url>jdbc:sqlite:identifier.sqlite</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="live_info" uuid="681c599b-059b-4abe-b45e-04721830e259">
+    <data-source source="LOCAL" name="live_info" uuid="e92f796e-58ed-4b4e-9af3-c28969209388">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:D:\Python\octopus\live_info.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:C:\PythonProject\octopus\live_info.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>
