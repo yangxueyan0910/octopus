@@ -33,7 +33,6 @@ class GetVideosWindow(QWidget):
         # self.resize(650, 400)
 
         layout = QVBoxLayout()
-
         # lbl = QLabel()
         # lbl.setText("网页链接")
         # layout.addWidget(lbl)
@@ -42,9 +41,9 @@ class GetVideosWindow(QWidget):
         btn_manage.clicked.connect(self.event_download_manage)
         top_layout.addWidget(btn_manage)
 
-        self.btn_setting = btn_setting = QPushButton("下载设置")
-        btn_setting.clicked.connect(self.event_download_setting)
-        top_layout.addWidget(btn_setting)
+        # self.btn_setting = btn_setting = QPushButton("下载设置")
+        # btn_setting.clicked.connect(self.event_download_setting)
+        # top_layout.addWidget(btn_setting)
 
         top_layout.addStretch()
         layout.addLayout(top_layout)
@@ -117,41 +116,27 @@ class GetVideosWindow(QWidget):
     def event_download_manage(self):
         if not GetVideosWindow.download_window:
             GetVideosWindow.download_window = DownloadVideosWindow(self.basedir)
+        #强制切换到第一个选项卡（进行中）
+        GetVideosWindow.download_window.setCurrentIndex(0)
         GetVideosWindow.download_window.show()
 
     def event_download_click(self):
-        # 添加文件夹选择对话框
+        #添加文件夹选择对话框
         save_dir = QFileDialog.getExistingDirectory(self, "选择视频保存路径")
         if not save_dir:
             QMessageBox.warning(self, "警告", "请选择有效的保存路径")
             return
 
+        #确保下载窗口存在
         if not GetVideosWindow.download_window:
             GetVideosWindow.download_window = DownloadVideosWindow(self.basedir)
-
-        #获取下载窗口的实例
-        download_window = GetVideosWindow.download_window
+        download_window = GetVideosWindow.download_window #获取下载窗口的实例
         download_window.show()
 
-        #确保已将需要下载的视频项添加到下载窗口的表格中，再触发下载
-        def delayed_start():
-            #初始化表格（从数据库加载未完成的任务）
-            download_window.init_table()
-            #再触发自动下载
-            download_window.event_all_start(automatic=True)
-
-        #使用定时器延迟执行，确保UI更新完成
-        from PyQt5.QtCore import QTimer
-        QTimer.singleShot(100, delayed_start)  #延迟100毫秒确保UI加载完
-
-        #选中的视频数量
         counter = 0
-        #需要下载的视频列表
-        download_videos_list = []
-        #获取选中数据
+        #遍历选中项，插入数据库并添加到下载窗口
         for i in range(self.table_widget.rowCount()):
             if self.table_widget.cellWidget(i, 0).isChecked():
-                counter += 1
                 try:
                     bvid = self.videos_url_list[i]['bvid']
                     video_url = self.videos_url_list[i]['video_url']  #新增获取 video_url
@@ -160,9 +145,6 @@ class GetVideosWindow(QWidget):
                     cursor.execute(sql, values)
                     result = cursor.fetchone()
                     if result is not None and result[0] == 0:
-                        if counter == 1:
-                            GetVideosWindow.download_window.show()
-
                         lock.acquire()
                         try:
                             video_url = self.videos_url_list[i]['video_url']
@@ -173,23 +155,26 @@ class GetVideosWindow(QWidget):
                             values = ( bvid, video_url,video_title, finish_flag, save_dir)
                             cursor.execute(sql_insert, values)
                             conn.commit()
-
                             GetVideosWindow.download_window.add_table_item(self.videos_url_list[i])
-                            download_videos_list.append(self.videos_url_list[i])
+                            counter += 1
                         except Exception as e:
                             conn.rollback()
-                            print(e)
-                            QMessageBox.warning(self, "错误", "数据插入未成功")
+                            QMessageBox.warning(self, "错误", f"数据库插入失败: {str(e)}")
                         finally:
                             lock.release()
                     else:
-                        print("警告：第{}行数据已存在于下载列表".format(i + 1))
+                        QMessageBox.warning(self,"警告",f"第{i+1}行数据已存在于数据库中")
                 except Exception as e:
-                    print(e)
+                    print(f"添加任务异常: {str(e)}")
         if counter <= 0:
-            QMessageBox.warning(self, "警告", "当前未选中任何数据")
+            QMessageBox.warning(self, "警告", "未选中任何有效任务")
         else:
-            pass
+            QMessageBox.information(self, "提示", f"已添加 {counter} 个任务到下载队列")
+
+        #新增：直接触发下载池，仅将新任务追加到队列尾部
+        if GetVideosWindow.download_window:
+            download_window.add_download_pool(True)
+
 
     def init_table_callback(self, title, video_url, bvid):
         self.current_row_count = self.table_widget.rowCount()

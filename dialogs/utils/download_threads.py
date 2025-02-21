@@ -124,8 +124,8 @@ class DownloadInfoThread(QThread):
         ts = (h * 60 * 60) + (m * 60) + s + (ms / 1000)
         return ts
 
-
     def compute_progress_and_send_progress(self, process, save_path):
+        last_saved_progress = 0
         duration = None
         while process.poll() is None:#轮询进程状态
             if not self.download_flag:#处理暂停逻辑
@@ -164,8 +164,25 @@ class DownloadInfoThread(QThread):
                     elapsed_seconds = self.get_seconds(elapsed_time)
                     progress = (elapsed_seconds / duration_seconds) * 100
                     progress = min(round(progress, 1), 100)  #确保不超过100
-                    self.set_current_value(math.ceil(progress))
-                    self.progress_signal.emit(math.ceil(progress)) #这里得是整数！不然进度条不显示
+                    current_progress = math.ceil(progress)  #取整
+                    self.set_current_value(current_progress)
+                    self.progress_signal.emit(current_progress) #这里得是整数！不然进度条不显示
+
+                    #每隔5%保存一次进度到数据库
+                    if abs(current_progress - last_saved_progress) >= 5:
+                        try:
+                            sql = "UPDATE download_video_list SET finish_flag = ? WHERE video_url = ?"
+                            values = (current_progress, self.item_video_info['video_url'])
+                            lock.acquire()
+                            cursor.execute(sql, values)
+                            conn.commit()
+                            last_saved_progress = current_progress
+                        except Exception as e:
+                            conn.rollback()
+                            print(f"自动保存进度失败: {str(e)}")
+                        finally:
+                            lock.release()
+
                     #更新实时速度
                     bitrate_res = re.search(r'\sbitrate=\s*(?P<bitrate>\S+)', line)
                     if bitrate_res:
