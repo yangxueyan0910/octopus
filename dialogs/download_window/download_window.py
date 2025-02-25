@@ -31,7 +31,8 @@ class DownloadVideosWindow(QTabWidget):
         self.queue = Queue()
         self.timer = QTimer(self)
         #新增并发控制属性
-        self.max_concurrent = 3  #最大并发数
+        self.max_concurrent = 3  #默认最大并发数
+        self.load_settings()
         self.current_tasks = 0  # 前运行任务数
 
         self.init_ui()
@@ -53,6 +54,16 @@ class DownloadVideosWindow(QTabWidget):
         # 每个选项卡自定义的内容
         self.processing_widget_UI()
         self.finisher_widget_UI()
+
+    def load_settings(self):
+        lock.acquire()
+        try:
+            cursor.execute("SELECT max_concurrent FROM download_settings WHERE id=1")
+            result=cursor.fetchone()
+            if result and result[0]:
+                self.max_concurrent=min(result[0],5)
+        finally:
+            lock.release()
 
     # 进行中界面样式
     def processing_widget_UI(self):
@@ -103,11 +114,10 @@ class DownloadVideosWindow(QTabWidget):
         # 弹簧
         header_layout.addStretch()
 
-        # # 1.1 创建按钮，加入header_layout
-        # btn_start = QPushButton("全部开始")
-        # # btn_start.setFixedHeight(100)
-        # btn_start.clicked.connect(self.event_all_start)
-        # header_layout.addWidget(btn_start)
+        # 1.1 创建按钮，加入header_layout
+        btn_start = QPushButton("全部开始")
+        btn_start.clicked.connect(self.event_all_start)
+        header_layout.addWidget(btn_start)
 
         # # 1.2 创建按钮
         # btn_stop = QPushButton("全部暂停")

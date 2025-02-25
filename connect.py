@@ -48,4 +48,16 @@ def connect():
         );
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "download_settings" (
+            "id" INTEGER NOT NULL,
+            "save_path" TEXT,
+            "max_concurrent" INTEGER DEFAULT 3,
+            PRIMARY KEY("id" AUTOINCREMENT)
+    )
+    """)
+    #初始化默认值
+    cursor.execute("INSERT OR IGNORE INTO download_settings (id) VALUES (1)")
+    conn.commit()
+
     return cursor, conn, lock_main

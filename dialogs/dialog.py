@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QCheckBox, QMessag
 from PyQt5.QtWidgets import QFileDialog
 
 from dialogs.download_window.download_window import DownloadVideosWindow
+from dialogs.download_window.settings_window import DownloadSettingWindow
 # 连接数据库
 cursor, conn, lock = connect.connect()
 
@@ -89,7 +90,8 @@ class GetVideosWindow(QWidget):
         self.setLayout(layout)
 
     def event_download_setting(self):
-        pass
+        self.settings_window=DownloadSettingWindow()
+        self.settings_window.show()
 
     def event_analysis_click(self):
         self.btn_analysis.setEnabled(False)
@@ -121,10 +123,17 @@ class GetVideosWindow(QWidget):
         GetVideosWindow.download_window.show()
 
     def event_download_click(self):
-        #添加文件夹选择对话框
-        save_dir = QFileDialog.getExistingDirectory(self, "选择视频保存路径")
+        #从数据库中获取保存路径
+        lock.acquire()
+        try:
+            cursor.execute("SELECT save_path FROM download_settings WHERE id=1")
+            result=cursor.fetchone()
+            save_dir=result[0] if result else None
+        finally:
+            lock.release()
+
         if not save_dir:
-            QMessageBox.warning(self, "警告", "请选择有效的保存路径")
+            QMessageBox.warning(self,"警告","请先在下载设置中配置保存路径")
             return
 
         #确保下载窗口存在
