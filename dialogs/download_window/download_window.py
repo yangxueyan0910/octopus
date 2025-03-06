@@ -23,7 +23,7 @@ class DownloadVideosWindow(QTabWidget):
         super(DownloadVideosWindow, self).__init__(*args, **kwargs)
         self.basedir = basedir
         self.pause_icon = QIcon(':/pause.ico')
-        self.start_icon = QIcon(':/play.ico')
+        self.start_icon = QIcon('D:\Python\octopus\/asset\load.ico')
         self.cancel_icon = QIcon(':/cancel.ico')
         self.dir_icon = QIcon(':/dir.ico')
         self.mutex = QMutex()
@@ -169,7 +169,7 @@ class DownloadVideosWindow(QTabWidget):
         #遍历所有行，将未开始的任务加入队列
         for row in range(self.table_widget.rowCount()):
             processbar = self.table_widget.cellWidget(row, 1)
-            if processbar.play_button.text() == "开始":
+            if processbar.play_button.text() == "正在排队":
                 self.queue.put(processbar)
 
         #强制触发下载池
@@ -181,8 +181,8 @@ class DownloadVideosWindow(QTabWidget):
         if A == QMessageBox.Yes:
             for row in range(self.table_widget.rowCount()):
                 processbar = self.table_widget.cellWidget(row, 1)
-                if processbar.play_button.text() == "开始":
-                    processbar.play_button.setText("暂停")
+                if processbar.play_button.text() == "正在排队":
+                    processbar.play_button.setText("下载中")
                 self.start_progress(processbar)
         else:
             return
@@ -262,7 +262,7 @@ class DownloadVideosWindow(QTabWidget):
         progress_bar.setValue(item_video['finish_flag'])
 
         #开始按钮
-        play_button = QPushButton(self.start_icon, "开始", self)
+        play_button = QPushButton(self.start_icon, "正在排队", self)
         play_button.setStyleSheet("border:none;")
         play_button.clicked.connect(lambda: self.add_queue(progress_bar))
 
@@ -308,17 +308,17 @@ class DownloadVideosWindow(QTabWidget):
         tip_item.setText(tip)
 
     def start_progress(self, progress_bar):
-        if progress_bar.play_button.text() == "开始":
+        if progress_bar.play_button.text() == "正在排队":
             progress_bar.setRange(0, 100)
             progress_bar.thread.download_flag = True
             progress_bar.thread.start()
             progress_bar.play_button.setIcon(self.pause_icon)
-            progress_bar.play_button.setText("暂停")
-        elif progress_bar.play_button.text() == "暂停":
+            progress_bar.play_button.setText("下载中")
+        elif progress_bar.play_button.text() == "下载中":
             #progress_bar.thread.stop()
             progress_bar.thread.download_flag = False
             progress_bar.play_button.setIcon(self.start_icon)
-            progress_bar.play_button.setText("开始")
+            progress_bar.play_button.setText("正在排队")
 
     def cancel_progress(self, bvid):
         # 事件发送,有时候我们会想知道是哪个组件发出了一个信号，PyQt5里的sender()方法能搞定这件事
@@ -398,8 +398,8 @@ class DownloadVideosWindow(QTabWidget):
             for item in selected_item_list:
                 row_index = item.row()  # 选中的当前行
                 processbar = self.table_widget.cellWidget(row_index, 1)
-                if processbar.play_button.text() == "开始":
-                    processbar.play_button.setText("暂停")
+                if processbar.play_button.text() == "正在排队":
+                    processbar.play_button.setText("下载中")
                 self.start_progress(processbar)
 
         if action == item_delete:
